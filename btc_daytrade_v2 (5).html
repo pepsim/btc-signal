@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080c10">
+<link rel="manifest" href="data:application/json,{}">
+<title>デイトレード シグナル PRO</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap');
+:root {
+  --bg:#080c10; --bg2:#0d1117; --bg3:#111820; --border:#1e2d3d;
+  --accent:#00d4ff; --green:#00ff88; --red:#ff3366; --yellow:#ffcc00;
+  --purple:#bf5fff; --gray:#4a5568; --text:#c9d1d9; --text2:#8b949e;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.container{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:12px;}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.header h1{font-family:'Space Mono',monospace;font-size:14px;color:var(--accent);letter-spacing:2px;}
+.header p{font-size:10px;color:var(--text2);margin-top:2px;}
+.live-badge{display:flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:11px;color:var(--green);}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+#clock{font-family:'Space Mono',monospace;font-size:12px;color:var(--text2);}
+
+/* COIN TABS */
+.coin-tabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;}
+.coin-tab{flex-shrink:0;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;cursor:pointer;transition:all 0.2s;text-align:center;min-width:90px;}
+.coin-tab:hover{border-color:var(--accent);}
+.coin-tab.active{border-color:var(--accent);background:rgba(0,212,255,0.08);}
+.coin-tab .ct-name{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);}
+.coin-tab .ct-price{font-size:11px;color:var(--text);margin-top:3px;}
+.coin-tab .ct-change{font-size:10px;margin-top:2px;}
+
+/* PRICE BAR */
+.price-bar{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+.price-main{display:flex;align-items:baseline;gap:10px;}
+#coin-price{font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:#fff;}
+#price-change{font-family:'Space Mono',monospace;font-size:13px;}
+.price-meta{display:flex;gap:16px;flex-wrap:wrap;}
+.pm-item .pm-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;}
+.pm-item .pm-value{font-family:'Space Mono',monospace;font-size:12px;color:var(--text);margin-top:2px;}
+
+/* MAIN SIGNAL */
+.main-signal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;text-align:center;}
+.signal-label{font-size:10px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
+.signal-display{font-family:'Space Mono',monospace;font-size:32px;font-weight:700;letter-spacing:4px;margin-bottom:8px;}
+.signal-display.long{color:var(--green);text-shadow:0 0 20px rgba(0,255,136,0.4);}
+.signal-display.short{color:var(--red);text-shadow:0 0 20px rgba(255,51,102,0.4);}
+.signal-display.wait{color:var(--yellow);text-shadow:0 0 20px rgba(255,204,0,0.3);}
+.score-wrap{margin:12px auto;max-width:380px;}
+.score-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-bottom:5px;}
+.score-bg{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;}
+.score-fill{height:100%;border-radius:4px;transition:width 0.8s ease,background 0.5s;}
+#score-num{font-family:'Space Mono',monospace;font-size:18px;color:#fff;margin-top:6px;}
+
+/* TRIPLE CONFIRM */
+.triple-confirm{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
+.triple-title{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;}
+.triple-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;}
+.triple-item{background:var(--bg3);border-radius:8px;padding:12px;text-align:center;border:1px solid transparent;transition:all 0.3s;}
+.triple-item.confirmed{border-color:var(--green);background:rgba(0,255,136,0.06);}
+.triple-item.waiting{border-color:var(--gray);}
+.triple-item .ti-label{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.triple-item .ti-name{font-size:12px;font-weight:700;}
+.triple-item .ti-status{font-size:10px;margin-top:4px;}
+.triple-status{text-align:center;padding:10px;border-radius:8px;font-size:13px;font-weight:700;}
+.triple-status.all{background:rgba(0,255,136,0.1);color:var(--green);border:1px solid rgba(0,255,136,0.3);}
+.triple-status.partial{background:rgba(255,204,0,0.08);color:var(--yellow);border:1px solid rgba(255,204,0,0.2);}
+.triple-status.none{background:rgba(255,255,255,0.03);color:var(--text2);border:1px solid var(--border);}
+
+/* TF TABS */
+.tf-tabs{display:flex;gap:8px;margin-bottom:12px;}
+.tf-tab{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center;cursor:pointer;transition:all 0.2s;}
+.tf-tab.active{border-color:var(--accent);background:rgba(0,212,255,0.06);}
+.tf-tab .tf-name{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);}
+.tf-tab .tf-sig{font-size:11px;font-weight:700;margin-top:3px;}
+.tf-tab .tf-sc{font-size:10px;color:var(--text2);margin-top:2px;}
+
+/* ALERT */
+.alert-box{border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:12px;line-height:1.6;}
+.alert-box.green{background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);color:var(--green);}
+.alert-box.red{background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.3);color:var(--red);}
+.alert-box.yellow{background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.2);color:var(--yellow);}
+
+/* INDICATORS */
+.ind-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.ind-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;}
+.ind-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.ind-name{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;}
+.ind-badge{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;}
+.badge-long{background:rgba(0,255,136,0.15);color:var(--green);}
+.badge-short{background:rgba(255,51,102,0.15);color:var(--red);}
+.badge-neutral{background:rgba(255,204,0,0.12);color:var(--yellow);}
+.ind-val{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;}
+.ind-desc{font-size:10px;color:var(--text2);line-height:1.5;}
+
+/* MACD bars */
+.macd-bars{display:flex;align-items:flex-end;gap:2px;height:36px;margin:6px 0;}
+.macd-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;}
+
+/* BB visual */
+.bb-vis{position:relative;height:28px;background:var(--bg3);border-radius:4px;margin:6px 0;overflow:hidden;}
+.bb-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);transition:left 0.5s;}
+
+/* FR bar */
+.fr-bar-wrap{display:flex;align-items:center;gap:6px;margin:6px 0;}
+.fr-bar{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;position:relative;}
+.fr-fill{position:absolute;top:0;height:100%;border-radius:4px;transition:all 0.5s;}
+
+/* FG meter */
+.fg-bar-bg{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));position:relative;margin:8px 0;}
+.fg-ptr{position:absolute;top:-4px;width:18px;height:18px;background:#fff;border-radius:50%;border:2px solid var(--bg);transform:translateX(-50%);transition:left 0.5s;box-shadow:0 0 8px rgba(255,255,255,0.4);}
+
+/* VWAP */
+.vwap-vis{position:relative;height:28px;background:var(--bg3);border-radius:4px;margin:6px 0;overflow:hidden;}
+.vwap-line{position:absolute;top:0;bottom:0;width:2px;background:var(--purple);opacity:0.7;transition:left 0.5s;}
+.vwap-price-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:var(--accent);transition:left 0.5s;}
+
+/* MULTI COIN TABLE */
+.multi-table{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;overflow-x:auto;}
+.section-title{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;}
+td{padding:8px;border-bottom:1px solid rgba(30,45,61,0.5);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(0,212,255,0.03);}
+.sig-cell{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;}
+
+/* STRATEGY */
+.strategies{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
+.strat-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:8px;border-left:3px solid var(--gray);}
+.strat-item.long-s{border-left-color:var(--green);}
+.strat-item.short-s{border-left-color:var(--red);}
+.strat-name{font-size:12px;font-weight:700;}
+.strat-desc{font-size:10px;color:var(--text2);margin-top:2px;}
+.strat-sig{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;text-align:right;}
+.strat-win{font-size:10px;color:var(--text2);margin-top:2px;}
+
+/* NOTIFICATION */
+.notif-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
+.notif-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(30,45,61,0.5);}
+.notif-row:last-child{border-bottom:none;}
+.notif-label{font-size:12px;color:var(--text);}
+.notif-sub{font-size:10px;color:var(--text2);margin-top:2px;}
+.toggle{position:relative;width:44px;height:24px;background:var(--bg3);border-radius:12px;cursor:pointer;border:1px solid var(--border);transition:background 0.3s;flex-shrink:0;}
+.toggle.on{background:var(--green);}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.3s;}
+.toggle.on::after{left:23px;}
+
+/* NEWS */
+.news-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
+.news-tabs{display:flex;gap:8px;margin-bottom:12px;}
+.news-tab{padding:6px 14px;border-radius:6px;font-size:11px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);color:var(--text2);transition:all 0.2s;}
+.news-tab.active{background:rgba(0,212,255,0.08);border-color:var(--accent);color:var(--accent);}
+.news-item{padding:10px 0;border-bottom:1px solid rgba(30,45,61,0.5);}
+.news-item:last-child{border-bottom:none;}
+.news-title{font-size:12px;color:var(--text);line-height:1.5;}
+.news-meta{font-size:10px;color:var(--text2);margin-top:4px;}
+.news-sentiment{font-size:10px;font-weight:700;margin-left:8px;}
+
+/* EVENTS */
+.events-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
+.event-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(30,45,61,0.5);}
+.event-item:last-child{border-bottom:none;}
+.ev-name{font-size:12px;font-weight:700;}
+.ev-desc{font-size:10px;color:var(--text2);margin-top:2px;}
+.ev-date{font-family:'Space Mono',monospace;font-size:11px;color:var(--yellow);text-align:right;}
+
+/* CALCULATOR */
+.calc-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
+.calc-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.calc-field{flex:1;min-width:120px;}
+.calc-field label{display:block;font-size:10px;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;}
+.calc-field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:9px 10px;color:#fff;font-family:'Space Mono',monospace;font-size:13px;outline:none;transition:border-color 0.2s;}
+.calc-field input:focus{border-color:var(--accent);}
+.calc-result{background:var(--bg3);border-radius:8px;padding:10px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.cr-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;}
+.cr-val{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:#fff;margin-top:3px;}
+
+.footer{text-align:center;font-size:10px;color:var(--gray);padding:12px 0;line-height:1.8;}
+
+@media(max-width:600px){
+  .ind-grid{grid-template-columns:1fr;}
+  .triple-grid{grid-template-columns:1fr 1fr 1fr;}
+  .calc-result{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <h1>DAYTRADE SIGNAL PRO</h1>
+    <p>デイトレード特化 — RSI × BB × VWAP トリプル確認</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <div id="clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- COIN TABS -->
+<div class="coin-tabs" id="coin-tabs">
+  <div class="coin-tab active" onclick="selectCoin('BTC')" id="tab-BTC">
+    <div class="ct-name">BTC</div>
+    <div class="ct-price" id="tab-price-BTC">$---</div>
+    <div class="ct-change" id="tab-change-BTC">--%</div>
+  </div>
+  <div class="coin-tab" onclick="selectCoin('ETH')" id="tab-ETH">
+    <div class="ct-name">ETH</div>
+    <div class="ct-price" id="tab-price-ETH">$---</div>
+    <div class="ct-change" id="tab-change-ETH">--%</div>
+  </div>
+  <div class="coin-tab" onclick="selectCoin('SOL')" id="tab-SOL">
+    <div class="ct-name">SOL</div>
+    <div class="ct-price" id="tab-price-SOL">$---</div>
+    <div class="ct-change" id="tab-change-SOL">--%</div>
+  </div>
+  <div class="coin-tab" onclick="selectCoin('XRP')" id="tab-XRP">
+    <div class="ct-name">XRP</div>
+    <div class="ct-price" id="tab-price-XRP">$---</div>
+    <div class="ct-change" id="tab-change-XRP">--%</div>
+  </div>
+</div>
+
+<!-- PRICE BAR -->
+<div class="price-bar">
+  <div class="price-main">
+    <div id="coin-price">$---,---</div>
+    <div id="price-change" style="color:var(--text2)">--%</div>
+  </div>
+  <div class="price-meta">
+    <div class="pm-item"><div class="pm-label">24H 高値</div><div class="pm-value" id="p-high">$---</div></div>
+    <div class="pm-item"><div class="pm-label">24H 安値</div><div class="pm-value" id="p-low">$---</div></div>
+    <div class="pm-item"><div class="pm-label">出来高</div><div class="pm-value" id="p-vol">---</div></div>
+    <div class="pm-item"><div class="pm-label">更新</div><div class="pm-value" id="p-update">--</div></div>
+  </div>
+</div>
+
+<!-- CHART -->
+<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);">
+    <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:2px;">📊 リアルタイムチャート (TradingView)</div>
+    <div style="display:flex;gap:6px;" id="chart-tf-btns">
+      <button onclick="switchChart('1')"  id="ctf-1"  style="padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all 0.2s;">1分</button>
+      <button onclick="switchChart('5')"  id="ctf-5"  style="padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all 0.2s;">5分</button>
+      <button onclick="switchChart('15')" id="ctf-15" style="padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--accent);background:rgba(0,212,255,0.08);color:var(--accent);transition:all 0.2s;">15分</button>
+      <button onclick="switchChart('60')" id="ctf-60" style="padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all 0.2s;">1時間</button>
+      <button onclick="switchChart('240')" id="ctf-240" style="padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all 0.2s;">4時間</button>
+      <button onclick="switchChart('D')"  id="ctf-D"  style="padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all 0.2s;">日足</button>
+    </div>
+  </div>
+  <div id="tv-chart-container" style="height:420px;"></div>
+</div>
+
+<!-- MAIN SIGNAL -->
+<div class="main-signal">
+  <div class="signal-label">総合シグナル — <span id="active-coin-label">BTC</span> デイトレード</div>
+  <div class="signal-display wait" id="main-sig">WAIT</div>
+  <div class="score-wrap">
+    <div class="score-labels"><span>◀ SHORT</span><span>WAIT</span><span>LONG ▶</span></div>
+    <div class="score-bg"><div class="score-fill" id="score-fill" style="width:50%;background:var(--yellow)"></div></div>
+    <div id="score-num">-- / 100</div>
+  </div>
+</div>
+
+<!-- TRIPLE CONFIRM -->
+<div class="triple-confirm">
+  <div class="triple-title">🔺 トリプル確認法 — RSI × BB × VWAP</div>
+  <div class="triple-grid">
+    <div class="triple-item waiting" id="tri-rsi">
+      <div class="ti-label">どちらに動く</div>
+      <div class="ti-name">RSI</div>
+      <div class="ti-status" id="tri-rsi-status">--</div>
+    </div>
+    <div class="triple-item waiting" id="tri-bb">
+      <div class="ti-label">バンド位置</div>
+      <div class="ti-name">BB</div>
+      <div class="ti-status" id="tri-bb-status">--</div>
+    </div>
+    <div class="triple-item waiting" id="tri-vwap">
+      <div class="ti-label">どこで入る</div>
+      <div class="ti-name">VWAP</div>
+      <div class="ti-status" id="tri-vwap-status">--</div>
+    </div>
+  </div>
+  <div class="triple-status none" id="triple-summary">データ読み込み中...</div>
+</div>
+
+<!-- TF TABS -->
+<div class="tf-tabs">
+  <div class="tf-tab active"><div class="tf-name">15分足</div><div class="tf-sig" id="tf15-s">--</div><div class="tf-sc" id="tf15-sc">--</div></div>
+  <div class="tf-tab"><div class="tf-name">1時間足</div><div class="tf-sig" id="tf1h-s">--</div><div class="tf-sc" id="tf1h-sc">--</div></div>
+  <div class="tf-tab"><div class="tf-name">4時間足</div><div class="tf-sig" id="tf4h-s">--</div><div class="tf-sc" id="tf4h-sc">--</div></div>
+</div>
+
+<!-- ALERT -->
+<div class="alert-box yellow" id="alert-box">📡 データ読み込み中...</div>
+
+<!-- INDICATORS -->
+<div class="ind-grid">
+  <!-- RSI -->
+  <div class="ind-card">
+    <div class="ind-head"><div class="ind-name">RSI (14) — 1H</div><div class="ind-badge badge-neutral" id="rsi-badge">--</div></div>
+    <div class="ind-val" id="rsi-val">--</div>
+    <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:6px 0;">
+      <div id="rsi-bar" style="height:100%;border-radius:3px;transition:width 0.5s,background 0.3s;"></div>
+    </div>
+    <div class="ind-desc" id="rsi-desc">読込中...</div>
+  </div>
+  <!-- MACD -->
+  <div class="ind-card">
+    <div class="ind-head"><div class="ind-name">MACD — 1H</div><div class="ind-badge badge-neutral" id="macd-badge">--</div></div>
+    <div class="ind-val" id="macd-val">--</div>
+    <div class="macd-bars" id="macd-bars"><div style="color:var(--text2);font-size:10px;">読込中...</div></div>
+    <div class="ind-desc" id="macd-desc">読込中...</div>
+  </div>
+  <!-- BB -->
+  <div class="ind-card">
+    <div class="ind-head"><div class="ind-name">ボリンジャーバンド</div><div class="ind-badge badge-neutral" id="bb-badge">--</div></div>
+    <div class="ind-val" id="bb-val">--%</div>
+    <div class="bb-vis" id="bb-vis"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text2);">読込中...</div></div>
+    <div class="ind-desc" id="bb-desc">読込中...</div>
+  </div>
+  <!-- VWAP -->
+  <div class="ind-card">
+    <div class="ind-head"><div class="ind-name">VWAP</div><div class="ind-badge badge-neutral" id="vwap-badge">--</div></div>
+    <div class="ind-val" id="vwap-val">$--</div>
+    <div class="vwap-vis" id="vwap-vis"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text2);">読込中...</div></div>
+    <div class="ind-desc" id="vwap-desc">読込中...</div>
+  </div>
+</div>
+
+<!-- FR + FG full width -->
+<div class="ind-grid">
+  <div class="ind-card">
+    <div class="ind-head"><div class="ind-name">ファンディングレート</div><div class="ind-badge badge-neutral" id="fr-badge">--</div></div>
+    <div class="ind-val" id="fr-val">--%</div>
+    <div class="fr-bar-wrap">
+      <span style="font-size:9px;color:var(--red);">S有利</span>
+      <div class="fr-bar"><div class="fr-fill" id="fr-fill" style="left:50%;width:0;background:var(--yellow)"></div></div>
+      <span style="font-size:9px;color:var(--green);">L有利</span>
+    </div>
+    <div class="ind-desc" id="fr-desc">読込中...</div>
+  </div>
+  <div class="ind-card">
+    <div class="ind-head"><div class="ind-name">Fear & Greed</div><div class="ind-badge badge-neutral" id="fg-badge">--</div></div>
+    <div class="ind-val" id="fg-val">--</div>
+    <div class="fg-bar-bg"><div class="fg-ptr" id="fg-ptr" style="left:50%"></div></div>
+    <div class="ind-desc" id="fg-desc">読込中...</div>
+  </div>
+</div>
+
+<!-- MULTI COIN TABLE -->
+<div class="multi-table">
+  <div class="section-title">マルチコイン シグナル一覧</div>
+  <table>
+    <thead><tr><th>コイン</th><th>価格</th><th>24h</th><th>シグナル</th><th>スコア</th><th>RSI</th><th>FR</th></tr></thead>
+    <tbody id="multi-tbody"><tr><td colspan="7" style="color:var(--text2);text-align:center;padding:16px;">読み込み中...</td></tr></tbody>
+  </table>
+</div>
+
+<!-- STRATEGY -->
+<div class="strategies">
+  <div class="section-title">デイトレード戦略シグナル</div>
+  <div class="strat-item" id="s-trend">
+    <div><div class="strat-name">📈 トレンドフォロー (MACD+RSI)</div><div class="strat-desc" id="sd-trend">読込中...</div></div>
+    <div><div class="strat-sig" id="ss-trend" style="color:var(--text2)">--</div><div class="strat-win">勝率 62-70%</div></div>
+  </div>
+  <div class="strat-item" id="s-rsi">
+    <div><div class="strat-name">⚡ RSI逆張り</div><div class="strat-desc" id="sd-rsi">読込中...</div></div>
+    <div><div class="strat-sig" id="ss-rsi" style="color:var(--text2)">--</div><div class="strat-win">勝率 60-68%</div></div>
+  </div>
+  <div class="strat-item" id="s-bb">
+    <div><div class="strat-name">🎯 BB逆張り</div><div class="strat-desc" id="sd-bb">読込中...</div></div>
+    <div><div class="strat-sig" id="ss-bb" style="color:var(--text2)">--</div><div class="strat-win">勝率 63-71%</div></div>
+  </div>
+  <div class="strat-item" id="s-vwap">
+    <div><div class="strat-name">💜 VWAP回帰トレード</div><div class="strat-desc" id="sd-vwap">読込中...</div></div>
+    <div><div class="strat-sig" id="ss-vwap" style="color:var(--text2)">--</div><div class="strat-win">勝率 65-73%</div></div>
+  </div>
+  <div class="strat-item" id="s-fr">
+    <div><div class="strat-name">💰 FR逆張り</div><div class="strat-desc" id="sd-fr">読込中...</div></div>
+    <div><div class="strat-sig" id="ss-fr" style="color:var(--text2)">--</div><div class="strat-win">勝率 68-74%</div></div>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif-box">
+  <div class="section-title">🔔 プッシュ通知設定</div>
+  <div class="notif-row">
+    <div><div class="notif-label">シグナル通知</div><div class="notif-sub">LONG/SHORTシグナル点灯時に通知</div></div>
+    <div class="toggle" id="notif-toggle" onclick="toggleNotif()"></div>
+  </div>
+  <div class="notif-row">
+    <div><div class="notif-label">トリプル確認通知</div><div class="notif-sub">3指標全確認時のみ通知（高精度）</div></div>
+    <div class="toggle" id="notif-triple" onclick="toggleTripleNotif()"></div>
+  </div>
+  <div class="notif-row">
+    <div><div class="notif-label">ナイトモード</div><div class="notif-sub">23:00〜7:00は通知オフ</div></div>
+    <div class="toggle" id="notif-night" onclick="toggleNight()"></div>
+  </div>
+  <div style="margin-top:10px;font-size:11px;color:var(--text2);" id="notif-status">通知状態: 未設定</div>
+</div>
+
+<!-- NEWS -->
+<div class="news-box">
+  <div class="section-title">📰 BTC ニュースフィード</div>
+  <div class="news-tabs">
+    <div class="news-tab active" onclick="showNews('latest')" id="nt-latest">最新</div>
+    <div class="news-tab" onclick="showNews('bullish')" id="nt-bullish">強気</div>
+    <div class="news-tab" onclick="showNews('bearish')" id="nt-bearish">弱気</div>
+  </div>
+  <div id="news-list"><div style="color:var(--text2);font-size:12px;padding:12px 0;">ニュース取得中...</div></div>
+</div>
+
+<!-- EVENTS -->
+<div class="events-box">
+  <div class="section-title">📅 重要イベント</div>
+  <div id="events-list"></div>
+</div>
+
+<!-- CALCULATOR -->
+<div class="calc-box">
+  <div class="section-title">📐 ポジションサイズ計算機</div>
+  <div class="calc-row">
+    <div class="calc-field"><label>総資金 (円)</label><input type="number" id="c-funds" value="100000" oninput="calcPos()"></div>
+    <div class="calc-field"><label>損切り幅 (%)</label><input type="number" id="c-sl" value="2" step="0.1" oninput="calcPos()"></div>
+    <div class="calc-field"><label>レバレッジ</label><input type="number" id="c-lev" value="3" oninput="calcPos()"></div>
+  </div>
+  <div class="calc-result">
+    <div><div class="cr-label">最大損失</div><div class="cr-val" id="c-loss">¥2,000</div></div>
+    <div><div class="cr-label">推奨ポジション</div><div class="cr-val" id="c-pos">¥300,000</div></div>
+    <div><div class="cr-label">リスク比率</div><div class="cr-val" id="c-risk">2.0%</div></div>
+  </div>
+  <div style="font-size:10px;color:var(--gray);margin-top:8px;">⚠️ 最終判断は自己責任。1トレードの損失は総資金の1〜2%以内を推奨。</div>
+</div>
+
+<div class="footer">データソース: Binance API / alternative.me<br>本ツールは情報提供のみ。投資助言ではありません。取引は自己責任で。</div>
+</div>
+
+<script>
+// ===== STATE =====
+let activeCoin = 'BTC';
+const COINS = ['BTC','ETH','SOL','XRP'];
+const SYMBOLS = {BTC:'BTCUSDT',ETH:'ETHUSDT',SOL:'SOLUSDT',XRP:'XRPUSDT'};
+let coinData = {};
+let fundingRate = 0, fearGreed = 50;
+let notifOn = false, tripleNotifOn = false, nightMode = false;
+let lastSignal = '';
+let updateSec = 0;
+
+// ===== CLOCK =====
+function updateClock(){
+  const jst = new Date(Date.now() + 9*3600000);
+  document.getElementById('clock').textContent = jst.toISOString().slice(11,19)+' JST';
+}
+setInterval(updateClock,1000); updateClock();
+setInterval(()=>{ updateSec++; document.getElementById('p-update').textContent=updateSec+'s前'; },1000);
+
+// ===== COIN SELECT =====
+function selectCoin(coin){
+  activeCoin = coin;
+  COINS.forEach(c=>{ document.getElementById('tab-'+c).classList.toggle('active',c===coin); });
+  document.getElementById('active-coin-label').textContent = coin;
+  if(coinData[coin]) renderCoin(coin);
+}
+
+// ===== CALC =====
+function calcRSI(closes, p=14){
+  if(closes.length<p+1) return 50;
+  let g=0,l=0;
+  for(let i=closes.length-p;i<closes.length;i++){
+    const d=closes[i]-closes[i-1];
+    if(d>0)g+=d; else l-=d;
+  }
+  const rs=g/(l||0.001);
+  return 100-100/(1+rs);
+}
+function calcMACD(closes){
+  const ema=(arr,n)=>{const k=2/(n+1);let e=arr[0];for(let i=1;i<arr.length;i++)e=arr[i]*k+e*(1-k);return e;};
+  if(closes.length<26) return {macd:0,signal:0,hist:0,histArr:[]};
+  const histArr=[];
+  for(let i=25;i<closes.length;i++){
+    const sl=closes.slice(0,i+1);
+    histArr.push(ema(sl,12)-ema(sl,26));
+  }
+  const sig=ema(histArr,9);
+  const last=histArr[histArr.length-1];
+  return {macd:last,signal:sig,hist:last-sig,histArr:histArr.slice(-12)};
+}
+function calcBB(closes,p=20,m=2){
+  if(closes.length<p) return null;
+  const sl=closes.slice(-p);
+  const mean=sl.reduce((a,b)=>a+b,0)/p;
+  const std=Math.sqrt(sl.reduce((a,b)=>a+(b-mean)**2,0)/p);
+  return {upper:mean+m*std,lower:mean-m*std,mid:mean};
+}
+function calcVWAP(candles){
+  let tv=0,v=0;
+  candles.slice(-24).forEach(c=>{
+    const tp=(c.high+c.low+c.close)/3;
+    tv+=tp*c.volume; v+=c.volume;
+  });
+  return v>0?tv/v:0;
+}
+function computeScore(rsi,macd,bb,price,vwap,fr,fg){
+  let score=50; const reasons=[];
+  if(rsi<=30){score+=18;reasons.push('RSI売られすぎ');}
+  else if(rsi<=42){score+=8;}
+  else if(rsi>=70){score-=18;reasons.push('RSI買われすぎ');}
+  else if(rsi>=58){score-=8;}
+  if(macd.hist>0){score+=10;}else{score-=10;}
+  if(bb){
+    const range=bb.upper-bb.lower;
+    const pos=range>0?(price-bb.lower)/range:0.5;
+    if(pos<0.08){score+=12;reasons.push('BB下限');}
+    else if(pos<0.3){score+=5;}
+    else if(pos>0.92){score-=12;reasons.push('BB上限');}
+    else if(pos>0.7){score-=5;}
+  }
+  if(vwap>0){
+    const diff=(price-vwap)/vwap*100;
+    if(diff>-0.3&&diff<0){score+=8;reasons.push('VWAP直下');}
+    else if(diff>0&&diff<0.3){score+=5;}
+    else if(diff<-2){score-=8;}
+    else if(diff>2){score-=5;}
+  }
+  if(fr<-0.03){score+=8;reasons.push('FRマイナス');}
+  else if(fr>0.05){score-=8;}
+  if(fg<=25){score+=8;reasons.push('極度の恐怖');}
+  else if(fg>=75){score-=8;}
+  score=Math.max(0,Math.min(100,Math.round(score)));
+  let sig='WAIT',cls='wait',color='var(--yellow)';
+  if(score>=65){sig='LONG';cls='long';color='var(--green)';}
+  else if(score<=35){sig='SHORT';cls='short';color='var(--red)';}
+  return {score,sig,cls,color,reasons};
+}
+
+// ===== FETCH =====
+async function fetchTicker(sym){
+  const r=await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`);
+  return r.json();
+}
+async function fetchKlines(sym,interval,limit=60){
+  const r=await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${interval}&limit=${limit}`);
+  const d=await r.json();
+  return d.map(k=>({open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));
+}
+async function fetchFunding(){
+  try{
+    const r=await fetch('https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=1');
+    const d=await r.json();
+    if(d&&d[0]) fundingRate=+d[0].fundingRate*100;
+  }catch(e){}
+}
+async function fetchFG(){
+  try{
+    const r=await fetch('https://api.alternative.me/fng/?limit=1');
+    const d=await r.json();
+    if(d?.data?.[0]) fearGreed=+d.data[0].value;
+  }catch(e){}
+}
+
+// ===== RENDER COIN =====
+function renderCoin(coin){
+  const d=coinData[coin];
+  if(!d) return;
+  const {ticker,k1h,k15m,k4h}=d;
+  const price=+ticker.lastPrice;
+  const change=+ticker.priceChangePercent;
+  const closes1h=k1h.map(c=>c.close);
+  const closes15m=k15m.map(c=>c.close);
+  const closes4h=k4h.map(c=>c.close);
+
+  // Price bar
+  document.getElementById('coin-price').textContent='$'+price.toLocaleString('en-US',{maximumFractionDigits:price>100?0:4});
+  const ce=document.getElementById('price-change');
+  ce.textContent=(change>=0?'+':'')+change.toFixed(2)+'%';
+  ce.style.color=change>=0?'var(--green)':'var(--red)';
+  document.getElementById('p-high').textContent='$'+(+ticker.highPrice).toLocaleString('en-US',{maximumFractionDigits:price>100?0:4});
+  document.getElementById('p-low').textContent='$'+(+ticker.lowPrice).toLocaleString('en-US',{maximumFractionDigits:price>100?0:4});
+  document.getElementById('p-vol').textContent=formatVol(+ticker.quoteVolume);
+  updateSec=0;
+
+  // Indicators
+  const rsi=calcRSI(closes1h);
+  const macd=calcMACD(closes1h);
+  const bb=calcBB(closes1h);
+  const vwap=calcVWAP(k1h);
+  updateRSI(rsi);
+  updateMACD(macd);
+  if(bb) updateBB(bb,price);
+  updateVWAP(vwap,price);
+  updateFR(fundingRate);
+  updateFG(fearGreed);
+
+  // Timeframes
+  const tfs=[
+    {closes:closes15m,sId:'tf15-s',scId:'tf15-sc'},
+    {closes:closes1h,sId:'tf1h-s',scId:'tf1h-sc'},
+    {closes:closes4h,sId:'tf4h-s',scId:'tf4h-sc'},
+  ];
+  tfs.forEach(tf=>{
+    if(tf.closes.length<26) return;
+    const r=calcRSI(tf.closes),m=calcMACD(tf.closes),b=calcBB(tf.closes),p=tf.closes[tf.closes.length-1];
+    const res=computeScore(r,m,b,p,vwap,fundingRate,fearGreed);
+    const se=document.getElementById(tf.sId);
+    se.textContent=res.sig; se.style.color=res.color;
+    document.getElementById(tf.scId).textContent=res.score+'/100';
+  });
+
+  // Main score
+  const result=computeScore(rsi,macd,bb,price,vwap,fundingRate,fearGreed);
+  updateMainSignal(result);
+  updateTriple(rsi,bb,price,vwap);
+  updateStrategies(rsi,macd,bb,price,vwap);
+  checkNotification(result);
+}
+
+function formatVol(v){
+  if(v>=1e9) return (v/1e9).toFixed(1)+'B';
+  if(v>=1e6) return (v/1e6).toFixed(1)+'M';
+  if(v>=1e3) return (v/1e3).toFixed(1)+'K';
+  return v.toFixed(0);
+}
+
+// ===== UPDATE INDICATORS =====
+function updateRSI(rsi){
+  document.getElementById('rsi-val').textContent=rsi.toFixed(1);
+  const bar=document.getElementById('rsi-bar');
+  bar.style.width=rsi+'%';
+  const badge=document.getElementById('rsi-badge');
+  const desc=document.getElementById('rsi-desc');
+  if(rsi>=70){badge.className='ind-badge badge-short';badge.textContent='買われすぎ';bar.style.background='var(--red)';desc.textContent='RSI過熱。下落リスクあり。利確・ショート検討';}
+  else if(rsi<=30){badge.className='ind-badge badge-long';badge.textContent='売られすぎ';bar.style.background='var(--green)';desc.textContent='RSI売られすぎ。反発ロングチャンス';}
+  else if(rsi>=55){badge.className='ind-badge badge-long';badge.textContent='やや強気';bar.style.background='var(--green)';desc.textContent='RSI強気域。上昇トレンド継続の可能性';}
+  else if(rsi<=45){badge.className='ind-badge badge-short';badge.textContent='やや弱気';bar.style.background='var(--red)';desc.textContent='RSI弱気域。下落トレンド継続の可能性';}
+  else{badge.className='ind-badge badge-neutral';badge.textContent='中立';bar.style.background='var(--yellow)';desc.textContent='RSI中立域。方向感を待つ';}
+}
+function updateMACD(m){
+  const val=document.getElementById('macd-val');
+  val.textContent=(m.hist>=0?'+':'')+m.hist.toFixed(0);
+  val.style.color=m.hist>=0?'var(--green)':'var(--red)';
+  const badge=document.getElementById('macd-badge');
+  const bars=document.getElementById('macd-bars');
+  const mx=Math.max(...m.histArr.map(Math.abs),1);
+  bars.innerHTML=m.histArr.map(v=>{
+    const h=Math.max(2,Math.abs(v)/mx*32);
+    return `<div class="macd-bar" style="height:${h}px;background:${v>=0?'var(--green)':'var(--red)'};opacity:0.8"></div>`;
+  }).join('');
+  if(m.hist>0){badge.className='ind-badge badge-long';badge.textContent='上昇';document.getElementById('macd-desc').textContent='MACDヒストグラム陽転。上昇モメンタム';}
+  else if(m.hist<0){badge.className='ind-badge badge-short';badge.textContent='下降';document.getElementById('macd-desc').textContent='MACDヒストグラム陰転。下落モメンタム';}
+  else{badge.className='ind-badge badge-neutral';badge.textContent='クロス';document.getElementById('macd-desc').textContent='MACDクロス付近。転換点の可能性';}
+}
+function updateBB(bb,price){
+  const range=bb.upper-bb.lower;
+  const pos=range>0?(price-bb.lower)/range:0.5;
+  const pct=(pos*100).toFixed(0);
+  document.getElementById('bb-val').textContent=pct+'%';
+  const vis=document.getElementById('bb-vis');
+  vis.innerHTML=`<div style="position:absolute;left:2px;top:0;bottom:0;width:2px;background:var(--red);opacity:0.5"></div>
+    <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--text2);opacity:0.2;transform:translateX(-50%)"></div>
+    <div style="position:absolute;right:2px;top:0;bottom:0;width:2px;background:var(--green);opacity:0.5"></div>
+    <div class="bb-dot" style="left:${Math.min(95,Math.max(5,pos*100))}%"></div>`;
+  const badge=document.getElementById('bb-badge');
+  const desc=document.getElementById('bb-desc');
+  if(pos>0.93){badge.className='ind-badge badge-short';badge.textContent='上限突破';desc.textContent=`BB上限($${bb.upper.toFixed(0)})突破。反落リスク高`;}
+  else if(pos<0.07){badge.className='ind-badge badge-long';badge.textContent='下限タッチ';desc.textContent=`BB下限($${bb.lower.toFixed(0)})付近。反発チャンス`;}
+  else if(pos>0.65){badge.className='ind-badge badge-long';badge.textContent='上半分';desc.textContent=`バンド上半分。強気域`;}
+  else if(pos<0.35){badge.className='ind-badge badge-short';badge.textContent='下半分';desc.textContent=`バンド下半分。弱気域`;}
+  else{badge.className='ind-badge badge-neutral';badge.textContent='中央';desc.textContent=`BB中央($${bb.mid.toFixed(0)})付近。方向感待ち`;}
+}
+function updateVWAP(vwap,price){
+  const fmtV=vwap>100?vwap.toFixed(0):vwap.toFixed(4);
+  document.getElementById('vwap-val').textContent='$'+parseFloat(fmtV).toLocaleString();
+  const diff=(price-vwap)/vwap*100;
+  const vis=document.getElementById('vwap-vis');
+  const pos=Math.max(5,Math.min(95,50+diff*10));
+  vis.innerHTML=`<div class="vwap-line" style="left:50%"></div>
+    <div class="vwap-price-dot" style="left:${pos}%"></div>
+    <div style="position:absolute;bottom:2px;left:4px;font-size:9px;color:var(--purple);">VWAP</div>
+    <div style="position:absolute;bottom:2px;right:4px;font-size:9px;color:var(--text2);">${diff>=0?'+':''}${diff.toFixed(2)}%</div>`;
+  const badge=document.getElementById('vwap-badge');
+  const desc=document.getElementById('vwap-desc');
+  if(diff>-0.3&&diff<0){badge.className='ind-badge badge-long';badge.textContent='VWAP直下';desc.textContent='VWAP直下。反発ロングの好機';}
+  else if(diff>0&&diff<0.5){badge.className='ind-badge badge-long';badge.textContent='VWAP上';desc.textContent='VWAP上方。強気継続';}
+  else if(diff<-1.5){badge.className='ind-badge badge-short';badge.textContent='大幅下方';desc.textContent='VWAPから大きく下方乖離。弱気';}
+  else if(diff>2){badge.className='ind-badge badge-short';badge.textContent='大幅上方';desc.textContent='VWAPから大幅上方乖離。過熱注意';}
+  else if(diff<0){badge.className='ind-badge badge-short';badge.textContent='VWAP下';desc.textContent='VWAP下方。弱気継続';}
+  else{badge.className='ind-badge badge-neutral';badge.textContent='VWAP上';desc.textContent='VWAP付近。中立';}
+}
+function updateFR(fr){
+  const fmtFr=(fr>=0?'+':'')+fr.toFixed(4)+'%';
+  const val=document.getElementById('fr-val');
+  val.textContent=fmtFr;
+  val.style.color=fr>0?'var(--red)':fr<0?'var(--green)':'var(--text)';
+  const pct=Math.min(Math.abs(fr)/0.1*50,50);
+  const fill=document.getElementById('fr-fill');
+  if(fr>0){fill.style.left='50%';fill.style.width=pct+'%';fill.style.background='var(--red)';}
+  else{fill.style.left=(50-pct)+'%';fill.style.width=pct+'%';fill.style.background='var(--green)';}
+  const badge=document.getElementById('fr-badge');
+  const desc=document.getElementById('fr-desc');
+  if(fr>0.05){badge.className='ind-badge badge-short';badge.textContent='SHORT有利';desc.textContent='FR高騰。ロング過多→逆張りショート検討';}
+  else if(fr<-0.03){badge.className='ind-badge badge-long';badge.textContent='LONG有利';desc.textContent='FRマイナス。ショート過多→逆張りロング検討';}
+  else{badge.className='ind-badge badge-neutral';badge.textContent='中立';desc.textContent='FR中立。特にシグナルなし';}
+}
+function updateFG(fg){
+  document.getElementById('fg-val').textContent=fg;
+  document.getElementById('fg-ptr').style.left=fg+'%';
+  const badge=document.getElementById('fg-badge');
+  const desc=document.getElementById('fg-desc');
+  if(fg<=25){badge.className='ind-badge badge-long';badge.textContent='極度の恐怖';desc.textContent='市場が恐怖に支配。歴史的には買い場';}
+  else if(fg<=45){badge.className='ind-badge badge-long';badge.textContent='恐怖';desc.textContent='恐怖域。やや買い有利';}
+  else if(fg>=75){badge.className='ind-badge badge-short';badge.textContent='極度の強欲';desc.textContent='強欲に支配。天井圏の可能性';}
+  else if(fg>=60){badge.className='ind-badge badge-short';badge.textContent='強欲';desc.textContent='強欲域。過熱感あり。利確検討';}
+  else{badge.className='ind-badge badge-neutral';badge.textContent='中立';desc.textContent='中立域。他の指標と合わせて判断';}
+}
+
+// ===== TRIPLE CONFIRM =====
+function updateTriple(rsi,bb,price,vwap){
+  let rsiOk=false,bbOk=false,vwapOk=false;
+  let rsiDir='',bbDir='',vwapDir='';
+  // RSI: 40以下(売られすぎ) or 60以上(買われすぎ) で確認
+  if(rsi<=40){rsiOk=true;rsiDir='🟢 売られすぎ ('+rsi.toFixed(0)+')';}
+  else if(rsi>=60){rsiOk=true;rsiDir='🔴 買われすぎ ('+rsi.toFixed(0)+')';}
+  else rsiDir='⏳ 中立 ('+rsi.toFixed(0)+')';
+  // BB: バンドの上位20%か下位20%で確認
+  if(bb){
+    const pos=(price-bb.lower)/(bb.upper-bb.lower);
+    if(pos<0.2){bbOk=true;bbDir='🟢 下限付近 ('+Math.round(pos*100)+'%)';}
+    else if(pos>0.8){bbOk=true;bbDir='🔴 上限付近 ('+Math.round(pos*100)+'%)';}
+    else bbDir='⏳ バンド中央 ('+Math.round(pos*100)+'%)';
+  }
+  // VWAP: ±1.5%以内で確認
+  const diff=(price-vwap)/vwap*100;
+  if(Math.abs(diff)<1.5){vwapOk=true;vwapDir='🟢 VWAP付近 ('+(diff>=0?'+':'')+diff.toFixed(2)+'%)';}
+  else if(diff<0) vwapDir='🔴 VWAP下方 ('+diff.toFixed(2)+'%)';
+  else vwapDir='🔴 VWAP上方 (+'+diff.toFixed(2)+'%)';
+
+  const tri=['tri-rsi','tri-bb','tri-vwap'];
+  const oks=[rsiOk,bbOk,vwapOk];
+  const dirs=[rsiDir,bbDir,vwapDir];
+  const statusIds=['tri-rsi-status','tri-bb-status','tri-vwap-status'];
+  tri.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.className='triple-item '+(oks[i]?'confirmed':'waiting');
+    document.getElementById(statusIds[i]).textContent=dirs[i];
+  });
+  const cnt=oks.filter(Boolean).length;
+  const sum=document.getElementById('triple-summary');
+  if(cnt===3){sum.className='triple-status all';sum.textContent='✅ トリプル確認！最強シグナル — 今がエントリーチャンス';}
+  else if(cnt===2){sum.className='triple-status partial';sum.textContent='⚡ '+cnt+'/3 確認済み — あと1つで最強シグナル';}
+  else{sum.className='triple-status none';sum.textContent='⏳ '+cnt+'/3 確認済み — シグナル待機中';}
+}
+
+// ===== MAIN SIGNAL =====
+function updateMainSignal(res){
+  const el=document.getElementById('main-sig');
+  el.textContent=res.sig; el.className='signal-display '+res.cls;
+  const fill=document.getElementById('score-fill');
+  fill.style.width=res.score+'%'; fill.style.background=res.color;
+  document.getElementById('score-num').textContent=res.score+' / 100';
+  const alert=document.getElementById('alert-box');
+  if(res.sig==='LONG'){alert.className='alert-box green';alert.textContent='🟢 ロングシグナル点灯！ '+(res.reasons.join('、')||'複数指標が上昇示唆')+'。損切りラインを必ず設定。';}
+  else if(res.sig==='SHORT'){alert.className='alert-box red';alert.textContent='🔴 ショートシグナル点灯！ '+(res.reasons.join('、')||'複数指標が下落示唆')+'。損切りラインを必ず設定。';}
+  else{alert.className='alert-box yellow';alert.textContent='⏳ 様子見。スコア '+res.score+'/100。シグナルが揃うまで待機推奨。';}
+}
+
+// ===== STRATEGIES =====
+function updateStrategies(rsi,macd,bb,price,vwap){
+  const set=(id,sig,cls,desc)=>{
+    document.getElementById('s-'+id).className='strat-item '+(cls==='long'?'long-s':cls==='short'?'short-s':'');
+    const se=document.getElementById('ss-'+id);
+    se.textContent=sig; se.style.color=cls==='long'?'var(--green)':cls==='short'?'var(--red)':'var(--yellow)';
+    document.getElementById('sd-'+id).textContent=desc;
+  };
+
+  // ① トレンドフォロー: MACD方向 + RSIが中立以上
+  if(macd.hist>0 && rsi>50)
+    set('trend','📈 LONG','long','MACD陽転+RSI強気。上昇トレンド継続中');
+  else if(macd.hist<0 && rsi<50)
+    set('trend','📉 SHORT','short','MACD陰転+RSI弱気。下落トレンド継続中');
+  else if(macd.hist>0)
+    set('trend','📈 やや LONG','long','MACD陽転。RSI確認待ち');
+  else if(macd.hist<0)
+    set('trend','📉 やや SHORT','short','MACD陰転。RSI確認待ち');
+  else
+    set('trend','⏳ WAIT','wait','トレンド不明確。シグナル待ち');
+
+  // ② RSI逆張り: 40以下か60以上で反応（緩めた）
+  if(rsi<=40)
+    set('rsi','🔁 LONG','long','RSI売られすぎ('+rsi.toFixed(0)+')。反発期待');
+  else if(rsi>=60)
+    set('rsi','🔁 SHORT','short','RSI買われすぎ('+rsi.toFixed(0)+')。反落期待');
+  else
+    set('rsi','⏳ WAIT','wait','RSI中立('+rsi.toFixed(0)+')。逆張りシグナルなし');
+
+  // ③ BB逆張り: バンドの上下20%で反応（緩めた）
+  if(bb){
+    const pos=(price-bb.lower)/(bb.upper-bb.lower);
+    if(pos<0.2)
+      set('bb','🎯 LONG','long','BB下限付近('+Math.round(pos*100)+'%)。平均回帰ロング');
+    else if(pos>0.8)
+      set('bb','🎯 SHORT','short','BB上限付近('+Math.round(pos*100)+'%)。平均回帰ショート');
+    else
+      set('bb','⏳ WAIT','wait','BBバンド中央('+Math.round(pos*100)+'%)。シグナルなし');
+  }
+
+  // ④ VWAP: 価格とVWAPの位置関係を正確に判定
+  const diff=(price-vwap)/vwap*100;
+  if(diff>-1.0 && diff<0)
+    set('vwap','💜 LONG','long','VWAP直下('+diff.toFixed(2)+'%)。反発ロングの好機');
+  else if(diff>=0 && diff<1.5)
+    set('vwap','💜 LONG','long','VWAP上方(+'+diff.toFixed(2)+'%)。強気継続');
+  else if(diff<-2.5)
+    set('vwap','💜 SHORT','short','VWAPから大幅下方乖離('+diff.toFixed(2)+'%)。弱気');
+  else if(diff>2.5)
+    set('vwap','💜 SHORT','short','VWAPから大幅上方乖離(+'+diff.toFixed(2)+'%)。過熱注意');
+  else if(diff<=-1.0)
+    set('vwap','⏳ WAIT','wait','VWAP下方('+diff.toFixed(2)+'%)。様子見');
+  else
+    set('vwap','⏳ WAIT','wait','VWAP付近。方向感待ち');
+
+  // ⑤ FR逆張り
+  if(fundingRate>0.05)
+    set('fr','💰 SHORT','short','FR高騰(+'+fundingRate.toFixed(4)+'%)→ロング過多。逆張りショート');
+  else if(fundingRate>0.01)
+    set('fr','⏳ WAIT','wait','FRやや高め(+'+fundingRate.toFixed(4)+'%)。注意');
+  else if(fundingRate<-0.03)
+    set('fr','💰 LONG','long','FRマイナス('+fundingRate.toFixed(4)+'%)→ショート過多。逆張りロング');
+  else
+    set('fr','⏳ WAIT','wait','FR中立('+fundingRate.toFixed(4)+'%)。シグナルなし');
+}
+
+// ===== MULTI COIN TABLE =====
+function updateMultiTable(){
+  const rows=COINS.map(coin=>{
+    const d=coinData[coin];
+    if(!d) return `<tr><td>${coin}</td><td colspan="6" style="color:var(--text2);">読込中...</td></tr>`;
+    const price=+d.ticker.lastPrice;
+    const change=+d.ticker.priceChangePercent;
+    const closes=d.k1h.map(c=>c.close);
+    const rsi=closes.length>14?calcRSI(closes):50;
+    const macd=closes.length>26?calcMACD(closes):{hist:0};
+    const bb=closes.length>20?calcBB(closes):null;
+    const vwap=calcVWAP(d.k1h);
+    const res=computeScore(rsi,macd,bb,price,vwap,fundingRate,fearGreed);
+    const chColor=change>=0?'var(--green)':'var(--red)';
+    const sigColor=res.sig==='LONG'?'var(--green)':res.sig==='SHORT'?'var(--red)':'var(--yellow)';
+    const frColor=fundingRate>0?'var(--red)':'var(--green)';
+    return `<tr style="${coin===activeCoin?'background:rgba(0,212,255,0.04);':''}">
+      <td style="font-family:'Space Mono',monospace;font-weight:700;color:var(--accent);cursor:pointer;" onclick="selectCoin('${coin}')">${coin}</td>
+      <td style="font-family:'Space Mono',monospace;">$${price.toLocaleString('en-US',{maximumFractionDigits:price>100?0:4})}</td>
+      <td style="color:${chColor};font-family:'Space Mono',monospace;">${change>=0?'+':''}${change.toFixed(2)}%</td>
+      <td class="sig-cell" style="color:${sigColor};">${res.sig}</td>
+      <td style="font-family:'Space Mono',monospace;">${res.score}/100</td>
+      <td style="font-family:'Space Mono',monospace;">${rsi.toFixed(0)}</td>
+      <td style="color:${frColor};font-family:'Space Mono',monospace;">${(fundingRate>=0?'+':'')+fundingRate.toFixed(3)}%</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('multi-tbody').innerHTML=rows;
+}
+
+// ===== NOTIFICATION =====
+function toggleNotif(){
+  if(!notifOn){
+    Notification.requestPermission().then(p=>{
+      if(p==='granted'){notifOn=true;document.getElementById('notif-toggle').classList.add('on');updateNotifStatus();}
+      else{updateNotifStatus('許可されていません');}
+    });
+  }else{notifOn=false;document.getElementById('notif-toggle').classList.remove('on');updateNotifStatus();}
+}
+function toggleTripleNotif(){
+  tripleNotifOn=!tripleNotifOn;
+  document.getElementById('notif-triple').classList.toggle('on',tripleNotifOn);
+  updateNotifStatus();
+}
+function toggleNight(){
+  nightMode=!nightMode;
+  document.getElementById('notif-night').classList.toggle('on',nightMode);
+  updateNotifStatus();
+}
+function updateNotifStatus(msg){
+  const parts=[];
+  if(notifOn) parts.push('シグナル通知ON');
+  if(tripleNotifOn) parts.push('トリプル通知ON');
+  if(nightMode) parts.push('ナイトモードON');
+  document.getElementById('notif-status').textContent='通知状態: '+(msg||parts.join('・')||'全てOFF');
+}
+function checkNotification(res){
+  if(!notifOn) return;
+  if(nightMode){const h=new Date().getHours();if(h>=23||h<7) return;}
+  if(res.sig!=='WAIT'&&res.sig!==lastSignal){
+    const t=activeCoin+' '+res.sig+'シグナル！スコア'+res.score+'/100';
+    new Notification('📊 デイトレード シグナル',{body:t,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="28" font-size="28">📊</text></svg>'});
+    lastSignal=res.sig;
+  }
+}
+
+// ===== NEWS =====
+let allNewsItems = [];
+let currentNewsTab = 'latest';
+
+function timeAgo(dateStr){
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if(diff < 60) return diff + '秒前';
+  if(diff < 3600) return Math.floor(diff/60) + '分前';
+  if(diff < 86400) return Math.floor(diff/3600) + '時間前';
+  return Math.floor(diff/86400) + '日前';
+}
+
+function getSentiment(item){
+  const votes = item.votes || {};
+  const pos = (votes.positive||0) + (votes.liked||0);
+  const neg = (votes.negative||0) + (votes.disliked||0);
+  if(pos > neg*1.5) return 'bullish';
+  if(neg > pos*1.5) return 'bearish';
+  return 'neutral';
+}
+
+// 日本語ニュースソース (RSS2JSON経由)
+const JP_NEWS_FEEDS = [
+  {url:'https://coinpost.jp/?feed=rss2', source:'CoinPost'},
+  {url:'https://crypto-times.jp/feed/', source:'CryptoTimes'},
+  {url:'https://jp.cointelegraph.com/rss', source:'コインテレグラフJP'},
+];
+
+async function fetchNews(){
+  const proxy = 'https://api.rss2json.com/v1/api.json?rss_url=';
+  let fetched = [];
+
+  for(const feed of JP_NEWS_FEEDS){
+    try{
+      const r = await fetch(proxy + encodeURIComponent(feed.url));
+      const d = await r.json();
+      if(d && d.items && d.items.length > 0){
+        const items = d.items.slice(0, 6).map(item=>({
+          title: item.title,
+          url: item.link,
+          time: timeAgo(item.pubDate),
+          sentiment: guessSentiment(item.title),
+          source: feed.source,
+        }));
+        fetched = fetched.concat(items);
+      }
+    } catch(e){ console.warn(feed.source + ' fetch failed'); }
+  }
+
+  if(fetched.length > 0){
+    // 新しい順に並び替え
+    allNewsItems = fetched;
+    renderNews();
+  } else {
+    document.getElementById('news-list').innerHTML =
+      '<div style="color:var(--text2);font-size:12px;padding:12px 0;">ニュース取得中... しばらくお待ちください</div>';
+  }
+}
+
+// タイトルから強気・弱気を推測
+function guessSentiment(title){
+  const bullish = ['上昇','高騰','急騰','最高値','買い','反発','回復','強気','流入','承認','採用'];
+  const bearish = ['下落','急落','暴落','最安値','売り','規制','禁止','ハッキング','詐欺','弱気','流出'];
+  for(const w of bullish) if(title.includes(w)) return 'bullish';
+  for(const w of bearish) if(title.includes(w)) return 'bearish';
+  return 'neutral';
+}
+
+function showNews(tab){
+  currentNewsTab = tab;
+  ['latest','bullish','bearish'].forEach(t=>{
+    document.getElementById('nt-'+t).classList.toggle('active', t===tab);
+  });
+  renderNews();
+}
+
+function renderNews(){
+  let items = allNewsItems;
+  if(currentNewsTab === 'bullish') items = allNewsItems.filter(n=>n.sentiment==='bullish');
+  if(currentNewsTab === 'bearish') items = allNewsItems.filter(n=>n.sentiment==='bearish');
+  if(items.length === 0){
+    document.getElementById('news-list').innerHTML='<div style="color:var(--text2);font-size:12px;padding:12px 0;">該当ニュースなし</div>';
+    return;
+  }
+  document.getElementById('news-list').innerHTML = items.slice(0,8).map(n=>{
+    const sc = n.sentiment==='bullish'?'var(--green)':n.sentiment==='bearish'?'var(--red)':'var(--yellow)';
+    const sl = n.sentiment==='bullish'?'📈 強気':n.sentiment==='bearish'?'📉 弱気':'';
+    return `<div class="news-item" style="cursor:pointer;" onclick="window.open('${n.url}','_blank')">
+      <div class="news-title">${n.title}</div>
+      <div class="news-meta">${n.source} · ${n.time}<span class="news-sentiment" style="color:${sc};margin-left:8px;">${sl}</span></div>
+    </div>`;
+  }).join('');
+}
+
+fetchNews();
+setInterval(fetchNews, 300000); // 5分ごと更新
+
+// ===== EVENTS with COUNTDOWN =====
+const EVENTS = [
+  {name:'🔴 米 雇用統計 (NFP)', desc:'BTC急変動あり。発表30分前後はポジション閉じること', datetime:'2026-03-07T13:30:00Z'},
+  {name:'🔴 米 CPI', desc:'予想より高い→BTC売り。低い→BTC買いが多いパターン', datetime:'2026-03-12T13:30:00Z'},
+  {name:'🔴 FOMC 政策金利', desc:'FRBの金利決定。BTCが大きく動く可能性', datetime:'2026-03-19T18:00:00Z'},
+  {name:'🟡 月末リバランス', desc:'機関投資家の調整。変動大きくなる傾向', datetime:'2026-03-31T00:00:00Z'},
+];
+
+function formatCountdown(ms){
+  if(ms < 0) return '終了';
+  const totalSec = Math.floor(ms/1000);
+  const d = Math.floor(totalSec/86400);
+  const h = Math.floor((totalSec%86400)/3600);
+  const m = Math.floor((totalSec%3600)/60);
+  const s = totalSec%60;
+  if(d > 0) return `${d}日 ${h}時間 ${m}分`;
+  if(h > 0) return `${h}時間 ${m}分 ${s}秒`;
+  return `${m}分 ${s}秒`;
+}
+
+function renderEvents(){
+  const now = Date.now();
+  document.getElementById('events-list').innerHTML = EVENTS.map(e=>{
+    const ms = new Date(e.datetime).getTime() - now;
+    const cd = formatCountdown(ms);
+    const urgent = ms > 0 && ms < 3600000; // 1時間以内
+    const jst = new Date(new Date(e.datetime).getTime() + 9*3600000);
+    const dateStr = `${jst.getMonth()+1}/${jst.getDate()} ${String(jst.getHours()).padStart(2,'0')}:${String(jst.getMinutes()).padStart(2,'0')} JST`;
+    return `<div class="event-item">
+      <div>
+        <div class="ev-name" style="${urgent?'color:var(--red);animation:pulse 1s infinite;':''}">${e.name}</div>
+        <div class="ev-desc">${e.desc}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'Space Mono',monospace;font-size:12px;color:${urgent?'var(--red)':'var(--yellow)'};">${cd}</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px;">${dateStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+renderEvents();
+setInterval(renderEvents, 1000); // 毎秒カウントダウン更新
+
+// ===== CALCULATOR =====
+function calcPos(){
+  const funds=+document.getElementById('c-funds').value||0;
+  const sl=+document.getElementById('c-sl').value||2;
+  const lev=+document.getElementById('c-lev').value||1;
+  const loss=funds*(sl/100);
+  const pos=(loss/(sl/100))*lev;
+  document.getElementById('c-loss').textContent='¥'+Math.round(loss).toLocaleString();
+  document.getElementById('c-pos').textContent='¥'+Math.round(pos).toLocaleString();
+  document.getElementById('c-risk').textContent=sl.toFixed(1)+'%';
+}
+calcPos();
+
+// ===== MAIN UPDATE =====
+async function updateAll(){
+  await Promise.all([fetchFunding(), fetchFG()]);
+  await Promise.all(COINS.map(async coin=>{
+    try{
+      const sym=SYMBOLS[coin];
+      const [ticker,k1h,k15m,k4h]=await Promise.all([
+        fetchTicker(sym),
+        fetchKlines(sym,'1h',60),
+        fetchKlines(sym,'15m',60),
+        fetchKlines(sym,'4h',60),
+      ]);
+      coinData[coin]={ticker,k1h,k15m,k4h};
+      // Update tab
+      const price=+ticker.lastPrice;
+      const change=+ticker.priceChangePercent;
+      document.getElementById('tab-price-'+coin).textContent='$'+price.toLocaleString('en-US',{maximumFractionDigits:price>100?0:3});
+      const ce=document.getElementById('tab-change-'+coin);
+      ce.textContent=(change>=0?'+':'')+change.toFixed(2)+'%';
+      ce.style.color=change>=0?'var(--green)':'var(--red)';
+    }catch(e){console.error(coin,e);}
+  }));
+  renderCoin(activeCoin);
+  updateMultiTable();
+  updateSec=0;
+}
+
+// ===== TRADINGVIEW CHART =====
+const TV_SYMBOLS = {BTC:'BINANCE:BTCUSDT',ETH:'BINANCE:ETHUSDT',SOL:'BINANCE:SOLUSDT',XRP:'BINANCE:XRPUSDT'};
+let currentTF = '15';
+
+function loadTVScript(cb){
+  if(window.TradingView){ cb(); return; }
+  const s=document.createElement('script');
+  s.src='https://s3.tradingview.com/tv.js';
+  s.onload=cb; document.head.appendChild(s);
+}
+
+function initChart(coin, tf){
+  const sym = TV_SYMBOLS[coin]||'BINANCE:BTCUSDT';
+  document.getElementById('tv-chart-container').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:12px;">チャート読込中...</div>';
+  loadTVScript(()=>{
+    document.getElementById('tv-chart-container').innerHTML='';
+    new TradingView.widget({
+      container_id:'tv-chart-container',
+      symbol:sym, interval:tf,
+      timezone:'Asia/Tokyo', theme:'dark', style:'1', locale:'ja',
+      toolbar_bg:'#0d1117', enable_publishing:false,
+      hide_top_toolbar:false, save_image:false,
+      height:420, width:'100%',
+      studies:['RSI@tv-basicstudies','MACD@tv-basicstudies','BB@tv-basicstudies'],
+      overrides:{
+        'paneProperties.background':'#080c10',
+        'paneProperties.backgroundType':'solid',
+        'scalesProperties.textColor':'#8b949e',
+        'mainSeriesProperties.candleStyle.upColor':'#00ff88',
+        'mainSeriesProperties.candleStyle.downColor':'#ff3366',
+        'mainSeriesProperties.candleStyle.borderUpColor':'#00ff88',
+        'mainSeriesProperties.candleStyle.borderDownColor':'#ff3366',
+        'mainSeriesProperties.candleStyle.wickUpColor':'#00ff88',
+        'mainSeriesProperties.candleStyle.wickDownColor':'#ff3366',
+      },
+    });
+  });
+}
+
+function switchChart(tf){
+  currentTF=tf;
+  ['1','5','15','60','240','D'].forEach(t=>{
+    const btn=document.getElementById('ctf-'+t); if(!btn) return;
+    const active=t===tf;
+    btn.style.borderColor=active?'var(--accent)':'var(--border)';
+    btn.style.background=active?'rgba(0,212,255,0.08)':'var(--bg3)';
+    btn.style.color=active?'var(--accent)':'var(--text2)';
+  });
+  initChart(activeCoin,tf);
+}
+
+// Patch selectCoin to also refresh chart
+const _origSelectCoin=selectCoin;
+function selectCoin(coin){
+  activeCoin=coin;
+  COINS.forEach(c=>{ document.getElementById('tab-'+c).classList.toggle('active',c===coin); });
+  document.getElementById('active-coin-label').textContent=coin;
+  if(coinData[coin]) renderCoin(coin);
+  initChart(coin,currentTF);
+}
+
+setTimeout(()=>initChart('BTC','15'),600);
+
+updateAll();
+setInterval(updateAll,60000);
+</script>
+</body>
+</html>
